@@ -775,11 +775,27 @@
         }
 
         function updateStats() {
-            const totalVol = currentData.reduce((sum, etf) => sum + (etf.volume * etf.price), 0);
-            const avgChange = currentData.reduce((sum, etf) => sum + etf.change, 0) / currentData.length;
-            const topGainer = currentData.reduce((max, etf) => etf.change > max.change ? etf : max, currentData[0]);
+            if (currentData.length === 0) return;
             
-            document.getElementById('totalVolume').textContent = `₩${(totalVol / 1000000000000).toFixed(1)}조`;
+            const totalVol = currentData.reduce((sum, etf) => {
+                const volume = etf.volume || 0;
+                const price = etf.price || 0;
+                return sum + (volume * price);
+            }, 0);
+            
+            const validChanges = currentData.filter(etf => etf.change !== undefined);
+            const avgChange = validChanges.length > 0 ? 
+                validChanges.reduce((sum, etf) => sum + etf.change, 0) / validChanges.length : 0;
+            
+            const topGainer = currentData.length > 0 ? 
+                currentData.reduce((max, etf) => (etf.change || 0) > (max.change || 0) ? etf : max, currentData[0]) : 
+                { ticker: 'N/A' };
+            
+            // 원화 환산 (1달러 = 1300원 가정)
+            const totalVolKRW = totalVol * 1300;
+            
+            document.getElementById('totalVolume').textContent = totalVolKRW > 0 ? 
+                `₩${(totalVolKRW / 1000000000000).toFixed(1)}조` : '₩0조';
             document.getElementById('activeETFs').textContent = currentData.length;
             document.getElementById('avgChange').textContent = `${avgChange >= 0 ? '+' : ''}${avgChange.toFixed(1)}%`;
             document.getElementById('topGainer').textContent = topGainer.ticker;
