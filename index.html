@@ -418,9 +418,10 @@
             'FAZ': { name: 'Direxion Daily Financial Bear 3X', leverage: 'inverse', category: 'financial' }
         };
 
+        let currentPeriod = 'daily';
         let currentData = [];
         let filteredData = [];
-        let realTimeData = {};
+        let realTimeData = [];
 
         // Alpha Vantage API 설정
         const ALPHA_VANTAGE_API_KEY = 'IICHBIPDPP6Q1GUZ';
@@ -673,9 +674,7 @@
             // 더 많은 ETF 데이터...
         ];
 
-        let currentPeriod = 'daily';
-        let currentData = [];
-        let filteredData = [];
+        // 전역 변수들이 이미 위에서 선언되었으므로 여기서는 제거
 
         function generateMoreETFs() {
             const baseETFs = [...leverageETFs];
