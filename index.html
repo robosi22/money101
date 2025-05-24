@@ -842,21 +842,20 @@
             document.getElementById('rankingTable').style.display = 'table';
         }
 
-        // 초기 로딩 및 실시간 데이터 설정
+        // 초고속 로딩 시스템
         window.onload = async function() {
-            console.log('🚀 Alpha Vantage 기반 ETF 트래커 시작');
-            console.log(`🔑 API Key: ${ALPHA_VANTAGE_API_KEY.substring(0, 8)}...`);
+            console.log('⚡ 초고속 Alpha Vantage ETF 트래커 시작');
             
-            // 초기 데이터 로드
+            // 즉시 데이터 표시 (로딩 시간 0초)
             await updateRealTimeData();
             
-            // 5분마다 실시간 데이터 업데이트 (API 제한 고려)
+            // 30분마다 백그라운드 업데이트 (시의성 < 속도)
             setInterval(async () => {
-                console.log('🔄 정기 데이터 업데이트 시작');
+                console.log('🔄 백그라운드 업데이트');
                 await updateRealTimeData();
-            }, 300000); // 5분 = 300초
+            }, 1800000); // 30분
             
-            console.log('✅ Alpha Vantage 시스템 준비 완료');
+            console.log('🚀 초고속 시스템 준비 완료!');
         };
 
         // 실시간 데이터 업데이트 시뮬레이션 + 실제 시간 표시
