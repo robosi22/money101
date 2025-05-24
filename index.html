@@ -1,4 +1,25 @@
-<!DOCTYPE html>
+// 업데이트 시간 표시 (한국시간 기준)
+        setInterval(() => {
+            const koreaTime = new Date(getKoreaTime());
+            const timeString = koreaTime.toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: KOREA_TIMEZONE
+            });
+            
+            const lastUpdate = lastUpdateTimestamp[currentPeriod];
+            const lastUpdateTime = lastUpdate ? 
+                new Date(lastUpdate).toLocaleString('ko-KR', { timeZone: KOREA_TIMEZONE }) :
+                '업데이트 필요';
+            
+            document.getElementById('lastUpdate').textContent = 
+                `마지막 배치 업데이트: ${lastUpdateTime} | 현재 한국시간: ${timeString}`;
+        }, 1000); // 1초마다 시간 업데이트
+                <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -352,9 +373,9 @@
         <div class="ranking-container">
             <div class="ranking-header">
                 <h2 id="rankingTitle">일별 거래순위 Top 10</h2>
-                <p id="lastUpdate">Alpha Vantage API 데이터 로딩 중... ⏳</p>
+                <p id="lastUpdate">배치 시스템 초기화 중...</p>
                 <div style="margin-top: 10px; font-size: 12px; opacity: 0.8;">
-                    🔗 Alpha Vantage API 연동 | 📊 실시간 주가 데이터 | 🇰🇷 한국인 거래량 가중
+                    📅 한국시간 23:59:59 기준 일일 배치 | 🔄 하루 1회 자동 업데이트 | 💾 로컬 캐싱
                 </div>
             </div>
             
@@ -842,21 +863,82 @@
             document.getElementById('rankingTable').style.display = 'table';
         }
 
-        // 초고속 로딩 시스템
+        // 한국시간 기준 일일 배치 시스템 초기화
         window.onload = async function() {
-            console.log('⚡ 초고속 Alpha Vantage ETF 트래커 시작');
+            const koreaTime = new Date(getKoreaTime());
+            console.log('📅 한국시간 기준 ETF 배치 시스템 시작');
+            console.log(`🕐 현재 한국시간: ${koreaTime.toLocaleString()}`);
             
-            // 즉시 데이터 표시 (로딩 시간 0초)
-            await updateRealTimeData();
+            // 초기 데이터 로드 (저장된 데이터 우선 사용)
+            await loadStoredData();
             
-            // 30분마다 백그라운드 업데이트 (시의성 < 속도)
-            setInterval(async () => {
-                console.log('🔄 백그라운드 업데이트');
-                await updateRealTimeData();
-            }, 1800000); // 30분
+            // 필요한 경우 일별 데이터 업데이트
+            await updatePeriodData('daily');
+            updateRanking();
             
-            console.log('🚀 초고속 시스템 준비 완료!');
+            // 매일 자정 1분 후 자동 업데이트 설정
+            scheduleNextUpdate();
+            
+            console.log('✅ 배치 시스템 준비 완료');
         };
+
+        // 저장된 데이터 로드
+        async function loadStoredData() {
+            try {
+                ['daily', 'weekly', 'monthly'].forEach(period => {
+                    const saved = localStorage.getItem(`etf_${period}_data`);
+                    if (saved) {
+                        const { data, timestamp } = JSON.parse(saved);
+                        switch(period) {
+                            case 'daily': 
+                                dailyData = data; 
+                                lastUpdateTimestamp.daily = timestamp;
+                                break;
+                            case 'weekly': 
+                                weeklyData = data; 
+                                lastUpdateTimestamp.weekly = timestamp;
+                                break;
+                            case 'monthly': 
+                                monthlyData = data; 
+                                lastUpdateTimestamp.monthly = timestamp;
+                                break;
+                        }
+                        console.log(`📋 ${period} 저장된 데이터 로드됨`);
+                    }
+                });
+            } catch (error) {
+                console.warn('저장된 데이터 로드 실패:', error);
+            }
+        }
+
+        // 다음 업데이트 스케줄링
+        function scheduleNextUpdate() {
+            const koreaDate = getKoreaDate();
+            const now = new Date();
+            
+            // 다음 날 00:01:00에 업데이트 스케줄
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 1, 0, 0); // 자정 1분 후
+            
+            const timeUntilUpdate = tomorrow.getTime() - now.getTime();
+            
+            console.log(`⏰ 다음 자동 업데이트: ${tomorrow.toLocaleString()}`);
+            
+            setTimeout(async () => {
+                console.log('🌅 일일 자동 업데이트 시작');
+                await updatePeriodData('daily');
+                await updatePeriodData('weekly');
+                await updatePeriodData('monthly');
+                
+                // 현재 선택된 기간 데이터 갱신
+                updateRanking();
+                
+                // 다음 업데이트 재스케줄링
+                scheduleNextUpdate();
+                
+            }, timeUntilUpdate);
+        }
 
         // 실시간 데이터 업데이트 시뮬레이션 + 실제 시간 표시
         setInterval(() => {
